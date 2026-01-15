@@ -1,0 +1,222 @@
+.stories-carousel {
+  display: flex;
+  overflow-x: scroll;
+  scrollbar-width: none; /* Ocultar barra de desplazamiento en Firefox */
+}
+
+.stories-carousel::-webkit-scrollbar {
+  display: none; /* Ocultar barra de desplazamiento en Chrome */
+}
+
+.stories-carousel-preview {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+}
+
+.category-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #ddd;
+    cursor: pointer;
+    position: relative;
+}
+
+.category-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stories-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.stories-modal-content {
+    position: relative;
+    max-width: 500px;
+    width: 90%;
+    background: #000;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.story-display {
+    position: relative;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.story-display img,
+.story-display video {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 10px;
+}
+
+.stories-modal-content .modal-footer{
+    text-align: center;
+}
+.stories-modal-content .modal-footer .modal-footer-box-button{
+    padding-top: 20px;
+}
+.stories-modal-content .close-modal {
+    position: absolute;
+    top: 22px;
+    right: 10px;
+    background: none !important;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding-top: 0;
+    padding-bottom: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+.progress-bars-container {
+    position: absolute;
+    top: 10px; /* Ajusta según sea necesario */
+    left: 0;
+    width: 100%;
+    display: flex;
+    gap: 2px; /* Espacio entre las barras */
+    justify-content: space-between;
+}
+
+.progress-bar {
+    flex-grow: 1; /* Hace que cada barra ocupe el mismo espacio */
+    height: 5px; /* Altura de la barra */
+    background: rgba(255, 255, 255, 0.3); /* Color de fondo para barra vacía */
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-inner {
+    height: 100%;
+    width: 0;
+    background: #fff; /* Color de progreso */
+    transition: width linear;
+}
+
+.stories-modal-content .prev-story,
+.stories-modal-content .next-story {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    font-size: 24px;
+    padding: 10px;
+    cursor: pointer;
+    z-index: 10;
+    border-radius: 0;
+}
+
+.stories-modal-content .prev-story {
+    left: 10px;
+}
+
+.stories-modal-content .next-story {
+    right: 10px;
+}
+
+.stories-modal-content .prev-story:hover,
+.stories-modal-content .next-story:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: black;
+}
+.stories-modal-content .toggle-audio {
+    position: absolute;
+    top: 22px;
+    right: 88px; /* Ajusta según la posición del botón cerrar */
+    background: none !important;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 0px;
+    padding-left: 0px;
+    z-index: 10;
+}
+.stories-modal-content .close-modal::after,
+.stories-modal-content .toggle-play::after,
+.stories-modal-content .toggle-audio::after{
+    content: "";
+    display: block;
+    background-repeat: no-repeat;
+    width: 24px;  /* Adapta este valor */
+    height: 24px; /* Adapta este valor */
+}
+
+.stories-modal-content .close-modal::after{
+    background-image: url('../icons/close.svg');
+}
+
+.stories-modal-content .toggle-audio.audio-off::after{
+    background-image: url('../icons/audio-off.svg');
+}
+.stories-modal-content .toggle-audio.audio-on::after{
+    background-image: url('../icons/audio-on.svg');
+}
+
+.stories-modal-content .toggle-audio:hover {
+    color: #ddd;
+}
+
+.stories-modal-content .toggle-play {
+    position: absolute;
+    top: 22px;
+    right: 48px; /* Ajusta basado en la posición del botón cerrar y audio */
+    background: none !important;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+.stories-modal-content .toggle-play:hover {
+    color: #ddd;
+}
+
+.stories-modal-content .toggle-play.play-off::after{
+    background-image: url('../icons/play-off.svg');
+}
+.stories-modal-content .toggle-play.play-on::after{
+    background-image: url('../icons/play-on.svg');
+}
+
+.stories-modal-content .modal-link[style="display: none;"] {
+    display: none !important;
+}
+.category-box{
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.category-name{
+    text-align: center;
+    margin-top: 10px;
+}

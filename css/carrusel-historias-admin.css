@@ -1,0 +1,23 @@
+#historias_custom_fields .button,
+#historias_custom_fields select,
+#historias_custom_fields input {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#historias_custom_fields .button,
+.button.media_upload_button {
+    background-color: #007cba;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#historias_custom_fields .button:hover,
+.button.media_upload_button:hover {
+    background-color: #005a87;
+    color: white;
+}
+
+
+
