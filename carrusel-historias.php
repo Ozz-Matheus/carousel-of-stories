@@ -224,7 +224,10 @@ function carrusel_historias_shortcode() {
     while ($query->have_posts()) {
         $query->the_post();
 
+        $post_timestamp = get_the_time('U');
+
         $post_categories = wp_get_post_terms(get_the_ID(), 'categoria_historia', array('fields' => 'all'));
+
         foreach ($post_categories as $category) {
             if (!isset($categories[$category->term_id])) {
                 $thumbnail_url = get_term_meta($category->term_id, 'term_thumbnail', true);
@@ -232,9 +235,15 @@ function carrusel_historias_shortcode() {
                 $categories[$category->term_id] = array(
                     'name' => $category->name,
                     'thumbnail' => $thumbnail_url,
-                    'order' => $order
+                    'order' => $order,
+                    'latest_time' => 0
                 );
             }
+
+            if ($post_timestamp > $categories[$category->term_id]['latest_time']) {
+                $categories[$category->term_id]['latest_time'] = $post_timestamp;
+            }
+
         }
 
         $media_type = get_post_meta(get_the_ID(), 'media_type', true);
@@ -266,7 +275,7 @@ function carrusel_historias_shortcode() {
     foreach ($categories as $category) {
         $thumbnail = !empty($category['thumbnail']) ? esc_url($category['thumbnail']) : '';
         echo '<div class="category-box">';
-        echo '<div class="category-preview" data-category="' . esc_attr($category['name']) . '" data-order="' . esc_attr($category['order']) . '">';
+        echo '<div class="category-preview" data-category="' . esc_attr($category['name']) . '" data-order="' . esc_attr($category['order']) . '" data-latest-time="' . esc_attr($category['latest_time']) . '">';
         if ($thumbnail) {
             echo '<img src="' . $thumbnail . '" alt="' . esc_attr($category['name']) . ' Icono">';
         } else {

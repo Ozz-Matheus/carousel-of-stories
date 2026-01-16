@@ -1,59 +1,116 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // =========================================================
-    // 1. LÓGICA DE NOTIFICACIÓN GLOBAL (Icono Header + Carrusel)
+    // CONFIGURACIÓN
     // =========================================================
+    const STORY_EXPIRATION_HOURS = 24;
+
     const globalConfig = window.CarruselGlobal || {};
-    const latestServerTime = parseInt(globalConfig.latestStoryTime) || 0;
-    const localSeenTime = parseInt(localStorage.getItem('carrusel_last_seen')) || 0;
+    const nowSeconds = Math.floor(Date.now() / 1000);
 
-    // Seleccionamos TANTO las cajas del carrusel COMO el icono del header
-    const notificationTargets = document.querySelectorAll(globalConfig.targetSelectors || '.category-preview, .header-story-icon');
+    let localSeenTime = parseInt(localStorage.getItem('carrusel_last_seen')) || 0;
 
-    // Función: Marcar todo como visto
-    function markStoriesAsSeen() {
-        if (latestServerTime > 0) {
-            localStorage.setItem('carrusel_last_seen', latestServerTime);
+    // Selectores
+    const categoryPreviews = document.querySelectorAll('.category-preview');
+    const headerIcons = document.querySelectorAll('.header-story-icon');
+    const headerTooltipText = document.querySelector('.header-story-icon .tooltip-text');
 
-            // Quitamos la clase visualmente de TODOS los elementos al instante
-            notificationTargets.forEach(el => el.classList.remove('has-new-story'));
+    // =========================================================
+    // 1. INICIALIZACIÓN: ¿QUIÉN TIENE LUZ VERDE?
+    // =========================================================
+    function updateVisuals() {
+        let anyNew = false;
+
+        categoryPreviews.forEach(el => {
+            const catTime = parseInt(el.getAttribute('data-latest-time')) || 0;
+            const storyAgeHours = (nowSeconds - catTime) / 3600;
+
+            // Es nueva SI: Es mayor a lo visto Y NO ha caducado
+            const isUnseen = catTime > localSeenTime;
+            const isFresh = storyAgeHours < STORY_EXPIRATION_HOURS;
+
+            if (isUnseen && isFresh) {
+                el.classList.add('has-new-story');
+                anyNew = true;
+            } else {
+                el.classList.remove('has-new-story');
+            }
+        });
+
+        // Actualizar el Header basado en si quedó alguna encendida
+        if (anyNew) {
+            headerIcons.forEach(icon => icon.classList.add('has-new-story'));
+            if (headerTooltipText) headerTooltipText.textContent = "Nueva historia";
+        } else {
+            headerIcons.forEach(icon => icon.classList.remove('has-new-story'));
+            if (headerTooltipText) headerTooltipText.textContent = "Historias";
         }
     }
 
-    // Comprobación Inicial: ¿Hay historias nuevas?
-    // Si la fecha del servidor es mayor a la guardada en local
-    if (latestServerTime > localSeenTime && latestServerTime > 0) {
-        notificationTargets.forEach(el => el.classList.add('has-new-story'));
-    }
+    // Ejecutar al inicio
+    updateVisuals();
 
-    // Event Listener GLOBAL para limpiar la notificación
-    notificationTargets.forEach(el => {
+
+    // =========================================================
+    // 2. LÓGICA AL HACER CLIC EN UNA CATEGORÍA
+    // =========================================================
+    categoryPreviews.forEach(el => {
+        el.addEventListener('click', function() {
+            const clickedTime = parseInt(this.getAttribute('data-latest-time')) || 0;
+
+            // SOLO actualizamos si lo que clicamos es más nuevo que lo que teníamos
+            if (clickedTime > localSeenTime) {
+                localSeenTime = clickedTime;
+                localStorage.setItem('carrusel_last_seen', localSeenTime);
+
+                // Quitamos la clase visualmente SOLO de este elemento al instante
+                this.classList.remove('has-new-story');
+
+                // Re-evaluamos el header (si quedan otras nuevas, el header sigue verde)
+                updateVisuals();
+            }
+            // Si clickedTime <= localSeenTime, NO hacemos nada. El aviso de otras historias queda intacto.
+        });
+    });
+
+
+    // =========================================================
+    // 3. LÓGICA DEL ICONO DEL HEADER
+    // =========================================================
+    headerIcons.forEach(el => {
         el.addEventListener('click', function(e) {
-            // Nota: Si es el icono del header y es un link <a>, no prevenimos el default
-            // para que navegue si tiene href, pero sí marcamos como visto.
-            markStoriesAsSeen();
 
-            // Opcional: Si quieres que el icono del header abra el modal si está en la misma página:
+            // A. Buscar si hay ALGUNA categoría marcada como nueva
+            const newStoryCategory = document.querySelector('.category-preview.has-new-story');
+            const firstCategory = document.querySelector('.category-preview');
+
+            // B. Si es el icono del header...
             if (this.classList.contains('header-story-icon')) {
-                const firstCategory = document.querySelector('.category-preview');
-                if (firstCategory) {
-                    e.preventDefault(); // Evita navegar si puede abrir el modal
-                    firstCategory.click(); // Simula click en la primera historia
+                // Si no es un enlace 'a' real, prevenimos comportamiento
+                if (!this.querySelector('a')) {
+                     e.preventDefault();
+                }
+
+                if (newStoryCategory) {
+                    // PRIORIDAD: Abrir la que tiene la historia nueva
+                    newStoryCategory.click();
+                } else if (firstCategory) {
+                    // FALLBACK: Si no hay nuevas, abrir la primera
+                    firstCategory.click();
                 }
             }
         });
     });
 
-    let isPlaying = true; // Los videos se reproducen automáticamente por defecto
-    let isAudioEnabled = false;
 
-    const categoryPreviews = document.querySelectorAll('.category-preview');
+    // =========================================================
+    // CÓDIGO DEL REPRODUCTOR / MODAL
+    // =========================================================
+    let isPlaying = true;
+    let isAudioEnabled = false;
     const modal = document.getElementById('stories-modal');
 
-    // Verificar si el modal existe antes de acceder a sus propiedades
-    if (!modal) {
-        return; // Detiene la ejecución si el modal no está en la página
-    }
+    if (!modal) return;
 
     const storyDisplay = modal.querySelector('.story-display');
     const progressBarsContainer = modal.querySelector('.progress-bars-container');
@@ -68,18 +125,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentItems = [];
     let storyTimeout;
     let currentDuration = 0;
-    let progressStartTime = 0; // Marca el inicio del progreso
-    let elapsedBeforePause = 0; // Tiempo transcurrido antes de la pausa
+    let progressStartTime = 0;
+    let elapsedBeforePause = 0;
 
     function createProgressBars(storiesCount) {
         progressBarsContainer.innerHTML = '';
         for (let i = 0; i < storiesCount; i++) {
             const progressBar = document.createElement('div');
             progressBar.className = 'progress-bar';
-
             const progressInner = document.createElement('div');
             progressInner.className = 'progress-bar-inner';
-
             progressBar.appendChild(progressInner);
             progressBarsContainer.appendChild(progressBar);
         }
@@ -87,7 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showStory(index) {
         clearTimeout(storyTimeout);
-
         const item = currentItems[index];
         storyDisplay.innerHTML = '';
         modalLink.href = item.link || '#';
@@ -103,11 +157,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const img = document.createElement('img');
             img.src = item.url;
             storyDisplay.appendChild(img);
-
             control_audio.classList.add('hidden');
             control_play.classList.add('hidden');
-
-            currentDuration = item.duration * 1000; // Duración definida
+            currentDuration = item.duration * 1000;
             progressStartTime = Date.now();
             updateProgressBar(index, currentDuration);
             storyTimeout = setTimeout(nextStoryHandler, currentDuration);
@@ -118,14 +170,13 @@ document.addEventListener('DOMContentLoaded', function() {
             video.muted = !isAudioEnabled;
             video.playsInline = true;
             storyDisplay.appendChild(video);
-
             control_audio.classList.remove('hidden');
             control_play.classList.remove('hidden');
 
             video.addEventListener('loadedmetadata', () => {
-                currentDuration = video.duration * 1000; // Duración real del video
+                currentDuration = video.duration * 1000;
                 progressStartTime = Date.now();
-                elapsedBeforePause = 0; // Reiniciar el tiempo transcurrido
+                elapsedBeforePause = 0;
                 updateProgressBar(index, currentDuration);
             });
 
@@ -148,10 +199,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateProgressBar(index, duration) {
         const bars = progressBarsContainer.querySelectorAll('.progress-bar-inner');
-
         bars.forEach((bar, i) => {
             bar.style.transition = 'none';
-
             if (i < index) {
                 bar.style.width = '100%';
             } else if (i === index) {
@@ -184,9 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const elapsed = video.currentTime * 1000;
         const remaining = currentDuration - elapsed;
         clearTimeout(storyTimeout);
-
         updateProgressBar(currentStoryIndex, currentDuration);
-
         if (isPlaying) {
             storyTimeout = setTimeout(nextStoryHandler, remaining);
         }
@@ -203,12 +250,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openModal(categoryName) {
-        currentItems = carruselHistoriasData.items.filter(item => item.category === categoryName);
-        if (currentItems.length > 0) {
-            createProgressBars(currentItems.length);
-            currentStoryIndex = 0;
-            modal.style.display = 'flex';
-            showStory(currentStoryIndex);
+        if(typeof carruselHistoriasData !== 'undefined'){
+             currentItems = carruselHistoriasData.items.filter(item => item.category === categoryName);
+             if (currentItems.length > 0) {
+                createProgressBars(currentItems.length);
+                currentStoryIndex = 0;
+                modal.style.display = 'flex';
+                showStory(currentStoryIndex);
+            }
         }
     }
 
@@ -230,39 +279,31 @@ document.addEventListener('DOMContentLoaded', function() {
     nextStory.addEventListener('click', nextStoryHandler);
     prevStory.addEventListener('click', prevStoryHandler);
 
-    const toggleAudioButton = modal.querySelector('.toggle-audio');
-
-    toggleAudioButton.addEventListener('click', function() {
+    control_audio.addEventListener('click', function() {
         isAudioEnabled = !isAudioEnabled;
-
         const video = storyDisplay.querySelector('video');
-        if (video) {
-            video.muted = !isAudioEnabled;
-        }
+        if (video) video.muted = !isAudioEnabled;
 
         if (isAudioEnabled) {
-            toggleAudioButton.classList.remove('audio-off');
-            toggleAudioButton.classList.add('audio-on');
+            control_audio.classList.remove('audio-off');
+            control_audio.classList.add('audio-on');
         } else {
-            toggleAudioButton.classList.remove('audio-on');
-            toggleAudioButton.classList.add('audio-off');
+            control_audio.classList.remove('audio-on');
+            control_audio.classList.add('audio-off');
         }
     });
 
-    const togglePlayButton = modal.querySelector('.toggle-play');
-
-    togglePlayButton.addEventListener('click', function() {
+    control_play.addEventListener('click', function() {
         const video = storyDisplay.querySelector('video');
-
         if (video) {
             if (isPlaying) {
                 video.pause();
-                togglePlayButton.classList.remove('play-off');
-                togglePlayButton.classList.add('play-on');
+                control_play.classList.remove('play-off');
+                control_play.classList.add('play-on');
             } else {
                 video.play();
-                togglePlayButton.classList.remove('play-on');
-                togglePlayButton.classList.add('play-off');
+                control_play.classList.remove('play-on');
+                control_play.classList.add('play-off');
             }
             isPlaying = !isPlaying;
         }
