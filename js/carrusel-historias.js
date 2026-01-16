@@ -1,5 +1,49 @@
 document.addEventListener('DOMContentLoaded', function() {
 
+    // =========================================================
+    // 1. LÓGICA DE NOTIFICACIÓN GLOBAL (Icono Header + Carrusel)
+    // =========================================================
+    const globalConfig = window.CarruselGlobal || {};
+    const latestServerTime = parseInt(globalConfig.latestStoryTime) || 0;
+    const localSeenTime = parseInt(localStorage.getItem('carrusel_last_seen')) || 0;
+
+    // Seleccionamos TANTO las cajas del carrusel COMO el icono del header
+    const notificationTargets = document.querySelectorAll(globalConfig.targetSelectors || '.category-preview, .header-story-icon');
+
+    // Función: Marcar todo como visto
+    function markStoriesAsSeen() {
+        if (latestServerTime > 0) {
+            localStorage.setItem('carrusel_last_seen', latestServerTime);
+
+            // Quitamos la clase visualmente de TODOS los elementos al instante
+            notificationTargets.forEach(el => el.classList.remove('has-new-story'));
+        }
+    }
+
+    // Comprobación Inicial: ¿Hay historias nuevas?
+    // Si la fecha del servidor es mayor a la guardada en local
+    if (latestServerTime > localSeenTime && latestServerTime > 0) {
+        notificationTargets.forEach(el => el.classList.add('has-new-story'));
+    }
+
+    // Event Listener GLOBAL para limpiar la notificación
+    notificationTargets.forEach(el => {
+        el.addEventListener('click', function(e) {
+            // Nota: Si es el icono del header y es un link <a>, no prevenimos el default
+            // para que navegue si tiene href, pero sí marcamos como visto.
+            markStoriesAsSeen();
+
+            // Opcional: Si quieres que el icono del header abra el modal si está en la misma página:
+            if (this.classList.contains('header-story-icon')) {
+                const firstCategory = document.querySelector('.category-preview');
+                if (firstCategory) {
+                    e.preventDefault(); // Evita navegar si puede abrir el modal
+                    firstCategory.click(); // Simula click en la primera historia
+                }
+            }
+        });
+    });
+
     let isPlaying = true; // Los videos se reproducen automáticamente por defecto
     let isAudioEnabled = false;
 

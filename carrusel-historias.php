@@ -11,12 +11,46 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Evitar acceso directo
 }
 
-// Enqueue los estilos y scripts
+// 1. Enqueue Global y Shortcode del Icono
 function carrusel_historias_enqueue_assets() {
-    wp_enqueue_style( 'carrusel-historias-style', plugin_dir_url( __FILE__ ) . 'css/carrusel-historias.css', array(), '0.1.3' );
-    wp_enqueue_script( 'carrusel-historias-script', plugin_dir_url( __FILE__ ) . 'js/carrusel-historias.js', array(), '0.1.3', true );
+    // Carga de estilos y scripts en todo el frontend
+    wp_enqueue_style( 'carrusel-historias-style', plugin_dir_url( __FILE__ ) . 'css/carrusel-historias.css', array(), '0.1.4' );
+    wp_enqueue_script( 'carrusel-historias-script', plugin_dir_url( __FILE__ ) . 'js/carrusel-historias.js', array('jquery'), '0.1.4', true );
+
+    // Consulta ultraligera para obtener solo la fecha de la última historia
+    $latest_story = get_posts([
+        'post_type'      => 'historia',
+        'posts_per_page' => 1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'fields'         => 'ids',
+    ]);
+
+    $latest_timestamp = 0;
+    if (!empty($latest_story)) {
+        $latest_timestamp = get_the_time('U', $latest_story[0]);
+    }
+
+    // Pasar datos a JS (Globalmente disponible)
+    wp_localize_script('carrusel-historias-script', 'CarruselGlobal', [
+        'latestStoryTime' => $latest_timestamp,
+        // Definimos aquí los selectores que se verán afectados
+        'targetSelectors' => '.category-preview, .header-story-icon'
+    ]);
 }
 add_action( 'wp_enqueue_scripts', 'carrusel_historias_enqueue_assets' );
+
+// 2. Snippet para el Icono del Header (Shortcode)
+function shortcode_icono_header() {
+
+    $iconSVG = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"> <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /> </svg>';
+
+    $tooltipText = '<span class="tooltip-text">Historias</span>';
+
+    return '<div class="new-icons header-story-icon"><span class="icon tooltip">' . $iconSVG . $tooltipText .'</span></div>';
+
+}
+add_shortcode('icono_historia_header', 'shortcode_icono_header');
 
 // Enqueue estilos para el área de administración
 function carrusel_historias_admin_enqueue_assets() {

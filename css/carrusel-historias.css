@@ -220,3 +220,38 @@
     text-align: center;
     margin-top: 10px;
 }
+
+/* Estilo base para el icono del header  */
+.header-story-icon {
+    transition: all 0.3s ease;
+}
+
+.header-story-icon .icon svg{
+    width: 26px !important;
+    height: 26px !important;
+    margin-top: 0 !important;
+}
+
+.new-icons svg path,
+.header-story-icon svg path{
+    stroke: rgba(255, 255, 255, 1);
+}
+
+.new-icons:hover svg path,
+.header-story-icon:hover svg path{
+    stroke: rgba(0,184,63,1);
+}
+
+/* CLASE ACTIVADA POR JS (Notificación) */
+.has-new-story {
+    border-color: #25D366 !important; /* Verde tipo WhatsApp/Instagram */
+    border-radius: 50%; /* Asegura que sea redondo */
+    animation: pulse-border 2s infinite;
+}
+
+/* Animación de latido */
+@keyframes pulse-border {
+    0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(37, 211, 102, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
